@@ -4,6 +4,14 @@ All notable changes to RustDesk Dashboard will be documented here.
 
 ---
 
+## [0.1.1] - 2026-03-06
+
+### Fixed
+- Changed default port from 3000 to 3777 to avoid conflicts with other apps
+- Port remains overridable via `PORT` environment variable
+
+---
+
 ## [0.1.0] - 2026-03-05
 
 ### Initial Release
