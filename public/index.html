@@ -10,22 +10,46 @@
 
   <header>
     <h1>RustDesk Dashboard</h1>
-    <div class="header-actions">
+    <nav class="tab-nav">
+      <button class="nav-tab active" data-tab="room">Room Layout</button>
+      <button class="nav-tab" data-tab="peers">Peers</button>
+    </nav>
+    <div class="header-actions" id="peers-actions">
       <button id="btn-add-peer" class="btn-primary">+ Add Peer</button>
       <button id="btn-add-group" class="btn-secondary">+ Add Group</button>
     </div>
+    <div class="header-actions hidden" id="room-actions">
+      <span id="room-mode-label" class="mode-label">View Mode</span>
+      <button id="btn-overview" class="btn-secondary">Overview</button>
+      <button id="btn-reset-setup" class="btn-secondary hidden">Reset</button>
+      <button id="btn-copy-setup" class="btn-secondary hidden">Copy to...</button>
+      <button id="btn-set-password" class="btn-secondary hidden">Lock</button>
+      <button id="btn-edit-layout" class="btn-secondary">Edit Layout</button>
+    </div>
   </header>
 
-  <main>
+  <!-- Peers Tab -->
+  <main id="main-view">
     <div id="filter-bar">
       <input type="text" id="search" placeholder="Search peers..." />
       <select id="filter-group">
         <option value="">All groups</option>
       </select>
     </div>
-
     <div id="peer-list"></div>
   </main>
+
+  <!-- Room Layout Tab -->
+  <section id="room-view" class="hidden">
+    <div id="setup-bar">
+      <div id="setup-tabs"></div>
+      <button id="btn-add-setup" class="btn-secondary">+ New Room</button>
+      <button id="btn-delete-setup" class="btn-icon delete">Delete</button>
+    </div>
+    <div id="room-canvas"></div>
+    <div id="canvas-resize-handle" title="Drag to resize viewport"></div>
+    <div id="room-overview" class="hidden"></div>
+  </section>
 
   <!-- Add/Edit Peer Modal -->
   <div id="modal-peer" class="modal hidden">
@@ -37,11 +61,11 @@
       <label>Peer ID</label>
       <input type="text" id="peer-id" placeholder="123456789" />
       <label>Group</label>
-      <select id="peer-group">
-        <option value="">No group</option>
-      </select>
+      <select id="peer-group"><option value="">No group</option></select>
       <label>Notes</label>
       <textarea id="peer-notes" placeholder="Optional notes..."></textarea>
+      <label>Alt ID / IP <span style="color:#4b5563;font-weight:400">(Tailscale/LAN address for ping &amp; fallback connect)</span></label>
+      <input type="text" id="peer-alt-id" placeholder="100.64.0.x or 192.168.x.x" />
       <div class="modal-actions">
         <button id="btn-save-peer" class="btn-primary">Save</button>
         <button class="btn-cancel modal-close">Cancel</button>
@@ -57,6 +81,21 @@
       <input type="text" id="group-name" placeholder="Production, Home, Work..." />
       <div class="modal-actions">
         <button id="btn-save-group" class="btn-primary">Save</button>
+        <button class="btn-cancel modal-close">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Copy Setup Modal -->
+  <div id="modal-copy" class="modal hidden">
+    <div class="modal-box">
+      <h2>Copy Layout To</h2>
+      <label>Existing room</label>
+      <select id="copy-target-select"></select>
+      <label>Or create new room named</label>
+      <input type="text" id="copy-new-name" placeholder="New room name..." />
+      <div class="modal-actions">
+        <button id="btn-confirm-copy" class="btn-primary">Copy</button>
         <button class="btn-cancel modal-close">Cancel</button>
       </div>
     </div>

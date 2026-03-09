@@ -1,6 +1,6 @@
 {
   "name": "rustdesk-dashboard",
-  "version": "1.0.0",
+  "version": "0.1.2",
   "description": "Custom RustDesk peer management dashboard",
   "main": "server/index.js",
   "scripts": {

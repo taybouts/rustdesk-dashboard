@@ -5,8 +5,7 @@ const db = require('../db')
 // --- Groups ---
 
 router.get('/groups', (req, res) => {
-  const groups = db.prepare('SELECT * FROM groups ORDER BY name').all()
-  res.json(groups)
+  res.json(db.prepare('SELECT * FROM groups ORDER BY name').all())
 })
 
 router.post('/groups', (req, res) => {
@@ -38,23 +37,23 @@ router.get('/peers', (req, res) => {
 })
 
 router.post('/peers', (req, res) => {
-  const { name, peer_id, group_id, notes } = req.body
+  const { name, peer_id, group_id, notes, alt_id } = req.body
   if (!name || !peer_id) return res.status(400).json({ error: 'name and peer_id required' })
   try {
     const result = db.prepare(
-      'INSERT INTO peers (name, peer_id, group_id, notes) VALUES (?, ?, ?, ?)'
-    ).run(name, peer_id, group_id || null, notes || '')
-    res.json({ id: result.lastInsertRowid, name, peer_id, group_id, notes })
+      'INSERT INTO peers (name, peer_id, group_id, notes, alt_id) VALUES (?, ?, ?, ?, ?)'
+    ).run(name, peer_id, group_id || null, notes || '', alt_id || '')
+    res.json({ id: result.lastInsertRowid, name, peer_id, group_id, notes, alt_id })
   } catch (e) {
     res.status(409).json({ error: 'Peer ID already exists' })
   }
 })
 
 router.put('/peers/:id', (req, res) => {
-  const { name, peer_id, group_id, notes } = req.body
+  const { name, peer_id, group_id, notes, alt_id } = req.body
   db.prepare(
-    'UPDATE peers SET name=?, peer_id=?, group_id=?, notes=? WHERE id=?'
-  ).run(name, peer_id, group_id || null, notes || '', req.params.id)
+    'UPDATE peers SET name=?, peer_id=?, group_id=?, notes=?, alt_id=? WHERE id=?'
+  ).run(name, peer_id, group_id || null, notes || '', alt_id || '', req.params.id)
   res.json({ ok: true })
 })
 
