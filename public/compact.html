@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Taydesk Control</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; overflow: hidden;
+    background: #080a0f;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #e2e8f0; user-select: none;
+  }
+  body { display: flex; flex-direction: column; }
+
+  /* ---- Room Box (identical to dashboard) ---- */
+  .room-box {
+    flex: 1; display: flex; flex-direction: column;
+    border: 2px solid #7c8cf8; border-radius: 12px;
+    overflow: hidden; min-height: 0;
+  }
+
+  .room-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 4px 0 10px; height: 34px; min-height: 34px;
+    background: #12151f; border-bottom: 1px solid #2d3148;
+    flex-shrink: 0; -webkit-app-region: drag;
+  }
+  .room-grab-handle {
+    width: 18px; height: 18px; flex-shrink: 0; border-radius: 3px;
+    background-image: radial-gradient(circle, #3d4160 1.5px, transparent 1.5px);
+    background-size: 5px 5px; background-position: 1px 1px;
+  }
+  .room-title {
+    font-size: 0.8rem; font-weight: 600; color: #7c8cf8;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-transform: uppercase;
+  }
+  .btn-ov {
+    padding: 2px 8px; font-size: 0.65rem; font-weight: 600;
+    background: #1a1d27; border: 1px solid #2d3148; border-radius: 4px;
+    color: #6b7280; cursor: pointer; transition: all 0.12s; flex-shrink: 0;
+    -webkit-app-region: no-drag;
+  }
+  .btn-ov:hover { border-color: #7c8cf8; color: #7c8cf8; }
+
+  .spacer { flex: 1; }
+
+  /* Window controls */
+  .win-controls { display: flex; gap: 0; flex-shrink: 0; -webkit-app-region: no-drag; }
+  .win-btn {
+    width: 34px; height: 28px; border: none; background: transparent;
+    color: #6b7280; font-size: 0.75rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s; border-radius: 0;
+  }
+  .win-btn:hover { background: #2d3148; color: #e2e8f0; }
+  .win-btn.close:hover { background: #c0392b; color: #fff; }
+
+  /* Room body — pod canvas with grid */
+  .room-body {
+    flex: 1; position: relative; overflow: hidden;
+    background: #0f1117;
+    background-image:
+      linear-gradient(rgba(45, 49, 72, 0.9) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45, 49, 72, 0.9) 1px, transparent 1px),
+      linear-gradient(rgba(45, 49, 72, 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(45, 49, 72, 0.3) 1px, transparent 1px);
+    background-size: 110px 110px, 110px 110px, 55px 55px, 55px 55px;
+  }
+  .room-inner {
+    position: absolute; top: 0; left: 0;
+    transform-origin: top left;
+  }
+
+  /* Pod token (identical to dashboard) */
+  .sim-token {
+    position: absolute; width: 110px; height: 110px;
+    background: #12151f; border: 2px solid #2d3148; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; gap: 4px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .sim-token:hover { border-color: #7c8cf8; box-shadow: 0 0 16px rgba(124,140,248,0.25); }
+  .sim-token:active { opacity: 0.85; }
+
+  .sim-label { font-size: 2.4rem; font-weight: 800; color: #7c8cf8; line-height: 1; pointer-events: none; }
+  .sim-name { font-size: 0.6rem; color: #4b5563; text-align: center; pointer-events: none; padding: 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+
+  .status-dot {
+    position: absolute; top: 6px; left: 6px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #374151; border: 1.5px solid #1a1d27;
+    pointer-events: none; transition: background 0.4s;
+  }
+  .status-dot.online { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.6); }
+  .status-dot.offline { background: #ef4444; }
+  .status-dot.unknown { background: #374151; }
+
+  /* ---- Overview ---- */
+  #overview {
+    flex: 1; overflow-y: auto; padding: 10px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
+    align-content: start; background: #080a0f;
+  }
+  .ov-card {
+    background: #1a1d27; border: 2px solid #2d3148; border-radius: 12px;
+    cursor: pointer; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .ov-card:hover { border-color: #7c8cf8; box-shadow: 0 0 16px rgba(124,140,248,0.2); }
+  .ov-card .ov-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 10px; font-size: 0.75rem; font-weight: 600; color: #e2e8f0;
+    background: #12151f; border-bottom: 1px solid #2d3148;
+  }
+  .ov-card .ov-body { position: relative; height: 90px; overflow: hidden; background: #0f1117; }
+  .ov-card .ov-inner { position: absolute; top: 0; left: 0; transform-origin: top left; }
+  .ov-card .mini-token {
+    position: absolute; width: 110px; height: 110px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #12151f; border: 2px solid #2d3148; border-radius: 12px;
+  }
+  .ov-card .mini-dot {
+    position: absolute; top: 4px; left: 4px;
+    width: 6px; height: 6px; border-radius: 50%; background: #374151;
+  }
+  .ov-card .mini-dot.online { background: #22c55e; }
+  .ov-card .mini-dot.offline { background: #ef4444; }
+  .ov-card .mini-label { font-size: 1.8rem; font-weight: 800; color: #7c8cf8; line-height: 1; }
+  .ov-card .mini-name { font-size: 0.45rem; color: #4b5563; }
+
+  .ov-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 10px; height: 34px; min-height: 34px;
+    background: #12151f; border-bottom: 1px solid #2d3148;
+  }
+  .ov-bar .title { font-size: 0.8rem; font-weight: 600; color: #6b7280; flex: 1; text-transform: uppercase; }
+
+  /* ---- Resize handles (frameless window) ---- */
+  .resize-edge { position: fixed; z-index: 999; }
+  .resize-n  { top: 0; left: 6px; right: 6px; height: 4px; cursor: ns-resize; }
+  .resize-s  { bottom: 0; left: 6px; right: 6px; height: 4px; cursor: ns-resize; }
+  .resize-e  { right: 0; top: 6px; bottom: 6px; width: 4px; cursor: ew-resize; }
+  .resize-w  { left: 0; top: 6px; bottom: 6px; width: 4px; cursor: ew-resize; }
+  .resize-nw { top: 0; left: 0; width: 6px; height: 6px; cursor: nw-resize; }
+  .resize-ne { top: 0; right: 0; width: 6px; height: 6px; cursor: ne-resize; }
+  .resize-sw { bottom: 0; left: 0; width: 6px; height: 6px; cursor: sw-resize; }
+  .resize-se { bottom: 0; right: 0; width: 6px; height: 6px; cursor: se-resize; }
+
+  .hidden { display: none !important; }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: #2d3148; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+  <!-- Room View -->
+  <div class="room-box" id="room-view">
+    <div class="room-header">
+      <div class="room-grab-handle"></div>
+      <span class="room-title" id="room-name"></span>
+      <button class="btn-ov" id="btn-overview">Overview</button>
+      <div class="spacer"></div>
+      <div class="win-controls">
+        <button class="win-btn" id="btn-minimize" title="Minimize">&#x2013;</button>
+        <button class="win-btn" id="btn-maximize" title="Maximize">&#x25A1;</button>
+        <button class="win-btn close" id="btn-close" title="Close">&#x2715;</button>
+      </div>
+    </div>
+    <div class="room-body">
+      <div class="room-inner" id="room-inner"></div>
+    </div>
+  </div>
+
+  <!-- Resize edges for frameless window -->
+  <div class="resize-edge resize-n" data-dir="n"></div>
+  <div class="resize-edge resize-s" data-dir="s"></div>
+  <div class="resize-edge resize-e" data-dir="e"></div>
+  <div class="resize-edge resize-w" data-dir="w"></div>
+  <div class="resize-edge resize-nw" data-dir="nw"></div>
+  <div class="resize-edge resize-ne" data-dir="ne"></div>
+  <div class="resize-edge resize-sw" data-dir="sw"></div>
+  <div class="resize-edge resize-se" data-dir="se"></div>
+
+  <!-- Overview -->
+  <div class="ov-bar hidden" id="ov-bar">
+    <span class="title">All Rooms</span>
+    <button class="btn-ov" id="btn-back">Back</button>
+  </div>
+  <div id="overview" class="hidden"></div>
+
+<script>
+const API = '/api'
+let peers = [], layouts = {}, peerStatus = {}
+let currentRoom = ''
+
+function simLabel(name) {
+  const n = name.toLowerCase(); let m
+  m = n.match(/^pods-(\d+)/); if (m) return 'S' + m[1]
+  m = n.match(/^podm-(\d+)/); if (m) return 'M' + m[1]
+  m = n.match(/^broadcast-(\d+)/); if (m) return 'B' + m[1]
+  m = name.match(/^([A-Za-z]{1,3})[^0-9]*?(\d+)?/)
+  if (m) return m[1].toUpperCase() + (m[2] || '')
+  return name.substring(0, 2).toUpperCase()
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+
+async function load() {
+  const [pRes, lRes] = await Promise.all([fetch(`${API}/peers`), fetch(`${API}/layouts`)])
+  peers = await pRes.json()
+  layouts = await lRes.json()
+  if (!layouts.setups) layouts = { active: 'Default', setups: { Default: { positions:{}, hidden:[] } } }
+  currentRoom = layouts.active || Object.keys(layouts.setups)[0]
+  showRoom(currentRoom)
+}
+
+// ---- Room View ----
+function showRoom(name) {
+  currentRoom = name
+  document.getElementById('room-view').classList.remove('hidden')
+  document.getElementById('ov-bar').classList.add('hidden')
+  document.getElementById('overview').classList.add('hidden')
+  document.getElementById('room-name').textContent = name
+  renderRoom()
+}
+
+function renderRoom() {
+  const setup = layouts.setups[currentRoom]
+  if (!setup) return
+  const positions = setup.positions || {}
+  const hidden = setup.hidden || []
+  const inner = document.getElementById('room-inner')
+  const visiblePeers = peers.filter(p => !hidden.includes(p.peer_id) && positions[p.peer_id])
+
+  if (!visiblePeers.length) { inner.innerHTML = ''; scaleRoom(); return }
+
+  inner.innerHTML = visiblePeers.map(p => {
+    const pos = positions[p.peer_id]
+    const st = peerStatus[p.peer_id] || 'unknown'
+    return `<div class="sim-token" style="left:${pos.x}px;top:${pos.y}px"
+                 data-pid="${esc(p.peer_id)}" data-alt="${esc(p.alt_id || '')}">
+      <div class="status-dot ${st}"></div>
+      <div class="sim-label">${esc(simLabel(p.name))}</div>
+      <div class="sim-name">${esc(p.name)}</div>
+    </div>`
+  }).join('')
+  scaleRoom()
+}
+
+function scaleRoom() {
+  const body = document.querySelector('.room-body')
+  const inner = document.getElementById('room-inner')
+  const setup = layouts.setups[currentRoom]
+  if (!setup || !body) return
+  const rw = setup.w || 880
+  const rh = setup.h || 530
+  inner.style.width = rw + 'px'
+  inner.style.height = rh + 'px'
+
+  const ww = body.parentElement.clientWidth
+  // Scale based on width, then set body height to match room aspect ratio
+  const scale = Math.min(ww / rw, 2)
+  inner.style.transform = `scale(${scale})`
+
+  const scaledH = rh * scale
+  body.style.height = scaledH + 'px'
+  body.style.flex = 'none'
+
+  // Scale grid to match
+  const g = 110 * scale, g2 = 55 * scale
+  body.style.backgroundSize = `${g}px ${g}px, ${g}px ${g}px, ${g2}px ${g2}px, ${g2}px ${g2}px`
+}
+
+// ---- Overview ----
+function showOverview() {
+  document.getElementById('room-view').classList.add('hidden')
+  document.getElementById('ov-bar').classList.remove('hidden')
+  document.getElementById('overview').classList.remove('hidden')
+  renderOverview()
+}
+
+function renderOverview() {
+  const ov = document.getElementById('overview')
+  ov.innerHTML = Object.entries(layouts.setups).map(([name, setup]) => {
+    const positions = setup.positions || {}
+    const hidden = setup.hidden || []
+    const rw = setup.w || 880
+    const rh = setup.h || 530
+    const visiblePeers = peers.filter(p => !hidden.includes(p.peer_id) && positions[p.peer_id])
+    const scale = Math.min(160 / rw, 90 / rh, 1)
+
+    const pods = visiblePeers.map(p => {
+      const pos = positions[p.peer_id]
+      const st = peerStatus[p.peer_id] || 'unknown'
+      return `<div class="mini-token" style="left:${pos.x}px;top:${pos.y}px">
+        <div class="mini-dot ${st}"></div>
+        <div class="mini-label">${esc(simLabel(p.name))}</div>
+      </div>`
+    }).join('')
+
+    return `<div class="ov-card" data-room="${esc(name)}">
+      <div class="ov-header"><span>${esc(name)}</span>${setup.password ? '<span>&#128274;</span>' : ''}</div>
+      <div class="ov-body"><div class="ov-inner" style="width:${rw}px;height:${rh}px;transform:scale(${scale})">${pods}</div></div>
+    </div>`
+  }).join('')
+
+  ov.querySelectorAll('.ov-card').forEach(card => {
+    card.addEventListener('click', () => showRoom(card.dataset.room))
+  })
+}
+
+// ---- Events ----
+document.getElementById('btn-overview').addEventListener('click', showOverview)
+document.getElementById('btn-back').addEventListener('click', () => showRoom(currentRoom))
+
+// Window controls (pywebview JS API)
+document.getElementById('btn-minimize').addEventListener('click', () => {
+  if (window.pywebview && window.pywebview.api) window.pywebview.api.minimize()
+})
+document.getElementById('btn-maximize').addEventListener('click', () => {
+  if (window.pywebview && window.pywebview.api) window.pywebview.api.toggle_maximize()
+})
+document.getElementById('btn-close').addEventListener('click', () => {
+  if (window.pywebview && window.pywebview.api) window.pywebview.api.close()
+  else window.close()
+})
+
+// Frameless window resize via edges
+;(function() {
+  let resizing = null
+  const MIN_W = 200, MIN_H = 150
+
+  document.querySelectorAll('.resize-edge').forEach(edge => {
+    edge.addEventListener('mousedown', e => {
+      e.preventDefault()
+      resizing = {
+        dir: edge.dataset.dir,
+        startX: e.screenX, startY: e.screenY,
+        startW: window.outerWidth, startH: window.outerHeight,
+        startLeft: window.screenX, startTop: window.screenY
+      }
+    })
+  })
+
+  document.addEventListener('mousemove', e => {
+    if (!resizing || !window.pywebview || !window.pywebview.api) return
+    const dx = e.screenX - resizing.startX
+    const dy = e.screenY - resizing.startY
+    const d = resizing.dir
+    let w = resizing.startW, h = resizing.startH
+    let x = resizing.startLeft, y = resizing.startTop
+
+    if (d.includes('e')) w = Math.max(MIN_W, resizing.startW + dx)
+    if (d.includes('w')) { w = Math.max(MIN_W, resizing.startW - dx); x = resizing.startLeft + dx }
+    if (d.includes('s')) h = Math.max(MIN_H, resizing.startH + dy)
+    if (d.includes('n')) { h = Math.max(MIN_H, resizing.startH - dy); y = resizing.startTop + dy }
+
+    window.pywebview.api.resize_window(x, y, w, h)
+  })
+
+  document.addEventListener('mouseup', () => { resizing = null })
+})()
+
+document.getElementById('room-inner').addEventListener('click', e => {
+  const token = e.target.closest('.sim-token')
+  if (!token) return
+  const pid = token.dataset.pid
+  const alt = token.dataset.alt
+  if (alt && peerStatus[pid] === 'online') window.location.href = `rustdesk://connect/${alt}`
+  else window.location.href = `rustdesk://connect/${pid}`
+})
+
+window.addEventListener('resize', () => {
+  if (!document.getElementById('room-view').classList.contains('hidden')) scaleRoom()
+})
+
+// Status polling
+async function fetchStatus() {
+  try {
+    const res = await fetch('/api/status')
+    peerStatus = await res.json()
+    document.querySelectorAll('.status-dot').forEach(dot => {
+      const token = dot.closest('.sim-token')
+      if (!token) return
+      dot.className = `status-dot ${peerStatus[token.dataset.pid] || 'unknown'}`
+    })
+  } catch(e) {}
+}
+
+load().then(() => { fetchStatus(); setInterval(fetchStatus, 15000) })
+</script>
+</body>
+</html>

@@ -62,4 +62,16 @@ router.delete('/peers/:id', (req, res) => {
   res.json({ ok: true })
 })
 
+// --- Room Layouts ---
+
+router.get('/layouts', (req, res) => {
+  const row = db.prepare('SELECT data FROM room_layouts WHERE id = 1').get()
+  res.json(row ? JSON.parse(row.data) : {})
+})
+
+router.put('/layouts', (req, res) => {
+  db.prepare('UPDATE room_layouts SET data = ? WHERE id = 1').run(JSON.stringify(req.body))
+  res.json({ ok: true })
+})
+
 module.exports = router

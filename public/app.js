@@ -118,7 +118,6 @@ document.getElementById('filter-group').addEventListener('change', renderPeers)
 // ROOM WORKSPACE
 // ============================================================
 
-const SETUPS_KEY  = 'roomSetups'
 const CANVAS_KEY  = 'roomCanvasDims'
 const TOKEN_W     = 110   // pod size in px
 const TOKEN_H     = 110
@@ -135,7 +134,7 @@ let canvasDims = { h: 620 }
 try { canvasDims = JSON.parse(localStorage.getItem(CANVAS_KEY) || '{"h":620}') } catch(e) {}
 function applyCanvasDims() { document.getElementById('room-canvas').style.height = canvasDims.h + 'px' }
 
-// --- Setup data ---
+// --- Setup data (stored in DB, not localStorage) ---
 let roomData = {
   active: 'Default',
   setups: { Default: { positions:{}, hidden:[], password:null, x:20, y:20, w:880, h:530 } }
@@ -154,18 +153,38 @@ function migrateSetup(s, idx) {
   return s
 }
 
-try {
-  const saved = localStorage.getItem(SETUPS_KEY)
-  if (saved) {
-    roomData = JSON.parse(saved)
-    Object.keys(roomData.setups).forEach((k, i) => { roomData.setups[k] = migrateSetup(roomData.setups[k], i) })
-  } else {
-    const old = localStorage.getItem('roomLayout')
-    if (old) roomData.setups['Default'].positions = JSON.parse(old)
-  }
-} catch(e) {}
+async function loadLayouts() {
+  try {
+    const res = await fetch(`${API}/layouts`)
+    const saved = await res.json()
+    if (saved && saved.setups && Object.keys(saved.setups).length > 0) {
+      roomData = saved
+      Object.keys(roomData.setups).forEach((k, i) => { roomData.setups[k] = migrateSetup(roomData.setups[k], i) })
+    } else {
+      // Migrate from localStorage if available (one-time)
+      const lsData = localStorage.getItem('roomSetups')
+      if (lsData) {
+        roomData = JSON.parse(lsData)
+        Object.keys(roomData.setups).forEach((k, i) => { roomData.setups[k] = migrateSetup(roomData.setups[k], i) })
+        await saveSetups()
+        localStorage.removeItem('roomSetups')
+      }
+    }
+  } catch(e) { console.error('Failed to load layouts:', e) }
+}
 
-function saveSetups() { localStorage.setItem(SETUPS_KEY, JSON.stringify(roomData)) }
+let _saveTimeout = null
+function saveSetups() {
+  // Debounce saves to avoid hammering the API during drags
+  clearTimeout(_saveTimeout)
+  _saveTimeout = setTimeout(() => {
+    fetch(`${API}/layouts`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(roomData)
+    }).catch(e => console.error('Failed to save layouts:', e))
+  }, 300)
+}
 
 function getSetup(name) {
   if (!roomData.setups[name]) roomData.setups[name] = migrateSetup({}, Object.keys(roomData.setups).length)
@@ -829,7 +848,7 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
 
 // ---- Init ----
 async function init() {
-  await Promise.all([fetchPeers(), fetchGroups()])
+  await Promise.all([fetchPeers(), fetchGroups(), loadLayouts()])
   renderGroupSelects(); renderPeers()
   startStatusPolling()
   // Default to Room Layout tab

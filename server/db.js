@@ -23,4 +23,14 @@ db.exec(`
 // Safe migration — add alt_id if not yet present
 try { db.exec('ALTER TABLE peers ADD COLUMN alt_id TEXT DEFAULT ""') } catch(e) {}
 
+// Room layouts stored in DB (not localStorage)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS room_layouts (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    data TEXT NOT NULL DEFAULT '{}'
+  );
+`)
+// Seed single row if empty
+try { db.prepare('INSERT OR IGNORE INTO room_layouts (id, data) VALUES (1, ?)').run('{}') } catch(e) {}
+
 module.exports = db
