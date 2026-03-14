@@ -255,6 +255,7 @@ def main():
         min_size=(600, 400),
         resizable=True,
         on_top=False,
+        hidden=True,
     )
     main_window.events.closing += on_closing
 

@@ -24,7 +24,7 @@ If Not fso.FileExists(pythonwPath) Then
     pythonwPath = "pythonw.exe"
 End If
 
-Set shortcut = WshShell.CreateShortcut(desktopPath & "\Taydesk.lnk")
+Set shortcut = WshShell.CreateShortcut(appDir & "\Taydesk.lnk")
 shortcut.TargetPath = pythonwPath
 shortcut.Arguments = """" & appDir & "\taydesk.pyw"""
 shortcut.WorkingDirectory = appDir

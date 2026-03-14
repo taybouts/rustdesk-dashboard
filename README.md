@@ -7,7 +7,7 @@ A native desktop app to organize, monitor, and launch RustDesk remote desktop co
 - Manage all your RustDesk peers organized into custom groups
 - **Mission Control**: Compact frameless overlay showing your room layout — always on top, one-click connect
 - **Room layouts**: Drag-and-drop pods into named rooms, switch between setups
-- Online/offline status indicators with ping-based monitoring
+- Online/offline status indicators via Tailscale status (with ping fallback)
 - One-click connect from desktop or mobile (via `rustdesk://` deep link)
 - Runs silently in the system tray — no browser, no console window
 
@@ -41,12 +41,12 @@ python generate_icon.py
 
 ### Run
 
-Double-click `taydesk.pyw` or use the desktop shortcut.
+Double-click `TayDesk.bat` or use the desktop shortcut (`Taydesk.lnk`).
 
 The app:
 1. Starts the Node.js server silently on port 3777
-2. Opens the Taydesk dashboard window
-3. Adds a system tray icon with menu
+2. Minimizes to the system tray (no window pops up)
+3. Open the dashboard or Mission Control from the tray menu
 
 ### Tray Menu
 
@@ -87,7 +87,7 @@ create_shortcut.vbs   — Creates desktop shortcut
 server/index.js       — Express server (port 3777)
 server/db.js          — SQLite setup (groups, peers, room_layouts)
 server/routes/peers.js — REST API for peers, groups, and layouts
-server/routes/status.js — Ping-based online/offline status
+server/routes/status.js — Tailscale + ping status checks
 public/index.html     — Dashboard UI
 public/style.css      — Dashboard styles
 public/app.js         — Dashboard logic + room workspace

@@ -6,6 +6,40 @@ let cache = {}
 let cacheTime = 0
 const CACHE_TTL = 12000
 
+// Parse `tailscale status` output into a map of IP -> status
+function getTailscaleStatus() {
+  return new Promise(resolve => {
+    exec('tailscale status', { timeout: 5000 }, (err, stdout) => {
+      if (err) return resolve(null)
+      const statuses = {}
+      for (const line of stdout.split('\n')) {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length < 5) continue
+        const ip = parts[0]
+        const rest = parts.slice(4).join(' ')
+        if (rest.includes('offline')) {
+          statuses[ip] = 'offline'
+        } else if (rest.includes('active')) {
+          statuses[ip] = 'online'
+        } else {
+          // "-" means idle but connected to Tailscale — reachable
+          statuses[ip] = 'online'
+        }
+      }
+      resolve(statuses)
+    })
+  })
+}
+
+// Find the Tailscale IP for a peer
+function findTailscaleIP(peer_id, alt_id) {
+  const isIP = s => /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(s)
+  const isTailscale = s => s.startsWith('100.64.')
+  const candidates = [peer_id, alt_id].filter(Boolean)
+  return candidates.find(s => isIP(s) && isTailscale(s)) || null
+}
+
+// Fallback ping for non-Tailscale peers
 function pingHost(host) {
   return new Promise(resolve => {
     const cmd = process.platform === 'win32'
@@ -15,16 +49,12 @@ function pingHost(host) {
   })
 }
 
-// Find the best address to ping for a peer.
-// Prefers IPs, then hostnames, skips pure numeric RustDesk relay IDs.
 function pickPingTarget(peer_id, alt_id) {
   const isIP = s => /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(s)
   const isRelayId = s => /^\d{6,}$/.test(s)
   const candidates = [peer_id, alt_id].filter(Boolean)
-  // Prefer IPs first
   const ip = candidates.find(isIP)
   if (ip) return ip
-  // Then hostnames (non-numeric or dot-separated non-IP)
   const host = candidates.find(s => !isRelayId(s))
   if (host) return host
   return null
@@ -34,8 +64,18 @@ router.get('/', async (req, res) => {
   if (Date.now() - cacheTime < CACHE_TTL) return res.json(cache)
 
   const peers = db.prepare('SELECT peer_id, alt_id FROM peers').all()
+  const tsStatus = await getTailscaleStatus()
 
   const results = await Promise.all(peers.map(async ({ peer_id, alt_id }) => {
+    // Try Tailscale status first
+    if (tsStatus) {
+      const tsIP = findTailscaleIP(peer_id, alt_id || '')
+      if (tsIP && tsStatus[tsIP]) {
+        return { peer_id, status: tsStatus[tsIP] }
+      }
+    }
+
+    // Fallback to ping for non-Tailscale peers
     const target = pickPingTarget(peer_id, alt_id || '')
     if (!target) return { peer_id, status: 'unknown' }
     const online = await pingHost(target)

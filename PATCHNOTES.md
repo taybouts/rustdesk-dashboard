@@ -1,3 +1,18 @@
+## v0.2.1 — Tailscale Status & Tray-Only Launch
+_Released: 2026-03-14_
+
+### Improvements
+- **Tailscale-aware status**: Peer online/offline now checks `tailscale status` first — idle peers show green instead of false-red from blocked ICMP pings. Falls back to ping for non-Tailscale peers.
+- **Tray-only launch**: Dashboard starts hidden in the system tray — open it from the tray menu when needed instead of it popping up on every launch.
+- **Renamed launcher**: `start.bat` → `TayDesk.bat` — cleaner branding, launches `pythonw taydesk.pyw` silently.
+- **Crash fix**: Removed invalid `allow_external_links` pywebview parameter that prevented the app from starting.
+
+### Architecture
+- `server/routes/status.js` — Rewired to parse `tailscale status` CLI output, matching peers by Tailscale IP (100.64.x.x). Ping fallback retained for LAN/hostname peers.
+- `TayDesk.bat` replaces `start.bat` as the launcher (no longer starts RustDesk separately).
+
+---
+
 ## v0.2.0 — Taydesk Desktop App & Mission Control
 _Released: 2026-03-12_
 
