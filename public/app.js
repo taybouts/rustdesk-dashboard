@@ -35,10 +35,17 @@ function renderPeers() {
   filtered.forEach(p => { const k = p.group_name||'Ungrouped'; if(!grouped[k]) grouped[k]=[]; grouped[k].push(p) })
   list.innerHTML = Object.entries(grouped).map(([g, items]) => `
     <div class="group-label">${g}</div>
-    ${items.map(p => `
-      <div class="peer-card">
-        <div class="peer-card-name">${escHtml(p.name)}</div>
-        <div class="peer-card-id">ID: ${escHtml(p.peer_id)}</div>
+    ${items.map(p => {
+      const st = peerStatus[p.peer_id] || 'unknown'
+      return `
+      <div class="peer-card" data-peer-id="${escHtml(p.peer_id)}">
+        <div class="peer-card-header">
+          <div class="peer-status-dot ${st}"></div>
+          <div class="peer-card-name">${escHtml(p.name)}</div>
+          <span class="peer-card-status ${st}">${st}</span>
+        </div>
+        <div class="peer-card-id">${escHtml(p.peer_id)}</div>
+        ${p.alt_id ? `<div class="peer-card-alt">${escHtml(p.alt_id)}</div>` : ''}
         ${p.notes ? `<div class="peer-card-notes">${escHtml(p.notes)}</div>` : ''}
         <div class="peer-card-actions">
           <button class="btn-connect" onclick="connect('${escHtml(p.peer_id)}')" title="${escHtml(p.peer_id)}">Direct</button>
@@ -46,14 +53,24 @@ function renderPeers() {
           <button class="btn-icon" onclick="openEdit(${p.id})">&#9998;</button>
           <button class="btn-icon delete" onclick="confirmDelete(${p.id},'${escHtml(p.name)}')">&#128465;</button>
         </div>
-      </div>`).join('')}
+      </div>`}).join('')}
   `).join('')
 }
 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
-function connect(peerId) { window.location.href = `rustdesk://connect/${peerId}` }
+function connect(peerId) {
+  const url = `rustdesk://connect/${peerId}`
+  // Use <a target="_top"> to break out of iframe (needed for admin.taybouts.com embed)
+  const a = document.createElement('a')
+  a.href = url
+  a.target = '_top'
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
 async function confirmDelete(id, name) {
   if (!confirm(`Delete "${name}"?`)) return
   await deletePeer(id); await fetchPeers(); renderPeers()
@@ -393,12 +410,21 @@ async function fetchStatus() {
   try {
     const res = await fetch('/api/status')
     peerStatus = await res.json()
-    // Update dots in-place without full re-render
+    // Update room token dots in-place without full re-render
     document.querySelectorAll('.status-dot').forEach(dot => {
       const token = dot.closest('.sim-token')
       if (!token) return
       const st = peerStatus[token.dataset.peerId] || 'unknown'
       dot.className = `status-dot ${st}`
+    })
+    // Update peer card dots and status badges
+    document.querySelectorAll('.peer-card[data-peer-id]').forEach(card => {
+      const pid = card.dataset.peerId
+      const st = peerStatus[pid] || 'unknown'
+      const dot = card.querySelector('.peer-status-dot')
+      const badge = card.querySelector('.peer-card-status')
+      if (dot) dot.className = `peer-status-dot ${st}`
+      if (badge) { badge.className = `peer-card-status ${st}`; badge.textContent = st }
     })
   } catch(e) {}
 }
