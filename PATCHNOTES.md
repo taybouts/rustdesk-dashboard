@@ -4,20 +4,20 @@ _Released: 2026-03-14_
 ### Improvements
 - **Tailscale-aware status**: Peer online/offline now checks `tailscale status` first — idle peers show green instead of false-red from blocked ICMP pings. Falls back to ping for non-Tailscale peers.
 - **Tray-only launch**: Dashboard starts hidden in the system tray — open it from the tray menu when needed instead of it popping up on every launch.
-- **Renamed launcher**: `start.bat` → `TayDesk.bat` — cleaner branding, launches `pythonw taydesk.pyw` silently.
+- **Renamed launcher**: `start.bat` → `T-Desk.bat` — cleaner branding, launches `pythonw t-desk.pyw` silently.
 - **Crash fix**: Removed invalid `allow_external_links` pywebview parameter that prevented the app from starting.
 
 ### Architecture
 - `server/routes/status.js` — Rewired to parse `tailscale status` CLI output, matching peers by Tailscale IP (100.64.x.x). Ping fallback retained for LAN/hostname peers.
-- `TayDesk.bat` replaces `start.bat` as the launcher (no longer starts RustDesk separately).
+- `T-Desk.bat` replaces `start.bat` as the launcher (no longer starts RustDesk separately).
 
 ---
 
-## v0.2.0 — Taydesk Desktop App & Mission Control
+## v0.2.0 — T-Desk Desktop App & Mission Control
 _Released: 2026-03-12_
 
 ### New Features
-- **Taydesk Desktop App**: Full native desktop wrapper using pywebview + pystray — no browser needed
+- **T-Desk Desktop App**: Full native desktop wrapper using pywebview + pystray — no browser needed
   - System tray icon with retro TV icon (generated via Pillow)
   - Frameless Mission Control window for compact room monitoring
   - Custom window controls (minimize, maximize, close) in the title bar
@@ -36,18 +36,18 @@ _Released: 2026-03-12_
 - **Layouts REST API**: `GET /api/layouts` and `PUT /api/layouts` for room data
 
 ### Improvements
-- Renamed project from "RustDesk Dashboard" to **Taydesk**
-- Updated all window titles, tray labels, and file names to Taydesk branding
+- Renamed project from "RustDesk Dashboard" to **T-Desk**
+- Updated all window titles, tray labels, and file names to T-Desk branding
 - `start.bat` now launches RustDesk minimized to tray alongside the dashboard
 - Set Windows AppUserModelID for proper taskbar icon grouping
 - Improved window icon loading with LoadImage Win32 API (48px + 16px sizes)
 
 ### Architecture
-- `taydesk.pyw` — Python desktop app (pywebview + pystray + subprocess server management)
+- `t-desk.pyw` — Python desktop app (pywebview + pystray + subprocess server management)
 - `public/compact.html` — Self-contained Mission Control UI (HTML/CSS/JS)
 - `server/db.js` — Added `room_layouts` table (single-row JSON blob)
 - `server/routes/peers.js` — Added `/api/layouts` GET/PUT routes
-- `generate_icon.py` — Generates `taydesk.ico` with retro TV + SMPTE color bars
+- `generate_icon.py` — Generates `t-desk.ico` with retro TV + SMPTE color bars
 - `create_shortcut.vbs` — Creates Windows desktop shortcut
 - Dependencies: `pywebview`, `pystray`, `Pillow` (Python); existing Node.js stack unchanged
 

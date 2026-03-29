@@ -24,13 +24,13 @@ If Not fso.FileExists(pythonwPath) Then
     pythonwPath = "pythonw.exe"
 End If
 
-Set shortcut = WshShell.CreateShortcut(appDir & "\Taydesk.lnk")
+Set shortcut = WshShell.CreateShortcut(appDir & "\T-Desk.lnk")
 shortcut.TargetPath = pythonwPath
-shortcut.Arguments = """" & appDir & "\taydesk.pyw"""
+shortcut.Arguments = """" & appDir & "\t-desk.pyw"""
 shortcut.WorkingDirectory = appDir
-shortcut.IconLocation = appDir & "\taydesk.ico"
-shortcut.Description = "Taydesk — RustDesk Dashboard"
+shortcut.IconLocation = appDir & "\t-desk.ico"
+shortcut.Description = "T-Desk — Remote Desktop Peer Dashboard"
 shortcut.WindowStyle = 7  ' Minimized (hidden)
 shortcut.Save
 
-WScript.Echo "Shortcut created on Desktop: Taydesk.lnk"
+WScript.Echo "Shortcut created: T-Desk.lnk"

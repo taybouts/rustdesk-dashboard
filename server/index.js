@@ -3,7 +3,7 @@ const cors = require('cors')
 const path = require('path')
 
 const app = express()
-const PORT = process.env.PORT || 3777
+const PORT = process.env.PORT || 5043
 
 app.use(cors())
 app.use(express.json())
@@ -17,5 +17,5 @@ app.get('*', (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`RustDesk Dashboard running at http://localhost:${PORT}`)
+  console.log(`T-Desk running at http://localhost:${PORT}`)
 })

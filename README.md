@@ -1,4 +1,4 @@
-# Taydesk
+# T-Desk
 
 A native desktop app to organize, monitor, and launch RustDesk remote desktop connections. Runs as a system tray app with a compact always-on-top Mission Control overlay.
 
@@ -41,10 +41,10 @@ python generate_icon.py
 
 ### Run
 
-Double-click `TayDesk.bat` or use the desktop shortcut (`Taydesk.lnk`).
+Double-click `T-Desk.bat` or use the desktop shortcut (`T-Desk.lnk`).
 
 The app:
-1. Starts the Node.js server silently on port 3777
+1. Starts the Node.js server silently on port 5043
 2. Minimizes to the system tray (no window pops up)
 3. Open the dashboard or Mission Control from the tray menu
 
@@ -81,10 +81,10 @@ Clicking a pod in Mission Control or a peer in the dashboard opens `rustdesk://<
 ## Project Structure
 
 ```
-taydesk.pyw           — Desktop app (tray + pywebview windows)
-generate_icon.py      — Generates taydesk.ico (retro TV icon)
+t-desk.pyw            — Desktop app (tray + pywebview windows)
+generate_icon.py      — Generates t-desk.ico (retro TV icon)
 create_shortcut.vbs   — Creates desktop shortcut
-server/index.js       — Express server (port 3777)
+server/index.js       — Express server (port 5043)
 server/db.js          — SQLite setup (groups, peers, room_layouts)
 server/routes/peers.js — REST API for peers, groups, and layouts
 server/routes/status.js — Tailscale + ping status checks

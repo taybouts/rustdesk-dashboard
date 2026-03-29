@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to RustDesk Dashboard will be documented here.
+All notable changes to T-Desk will be documented here.
 
 ---
 

@@ -1,4 +1,4 @@
-"""Generate taydesk.ico — retro TV with antenna and color bars."""
+"""Generate t-desk.ico — retro TV with antenna and color bars."""
 from PIL import Image, ImageDraw
 
 def create_icon():
@@ -96,9 +96,9 @@ def create_icon():
         images.append(img)
 
     # Save as .ico with all sizes
-    images[-1].save('taydesk.ico', format='ICO', sizes=[(s, s) for s in sizes],
+    images[-1].save('t-desk.ico', format='ICO', sizes=[(s, s) for s in sizes],
                     append_images=images[:-1])
-    print(f"Created taydesk.ico with sizes: {sizes}")
+    print(f"Created t-desk.ico with sizes: {sizes}")
 
 if __name__ == '__main__':
     create_icon()

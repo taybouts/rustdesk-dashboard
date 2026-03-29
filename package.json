@@ -1,7 +1,7 @@
 {
-  "name": "rustdesk-dashboard",
-  "version": "0.1.2",
-  "description": "Custom RustDesk peer management dashboard",
+  "name": "t-desk",
+  "version": "0.3.0",
+  "description": "T-Desk — Remote desktop peer dashboard",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

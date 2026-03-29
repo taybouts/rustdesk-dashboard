@@ -1,5 +1,5 @@
 """
-Taydesk — RustDesk Dashboard Desktop App
+T-Desk — Remote Desktop Peer Dashboard
 System tray + pywebview wrapper around the Node.js server.
 No console window, no browser. Just a native app.
 """
@@ -18,10 +18,10 @@ from pystray import MenuItem as Item
 from PIL import Image
 
 # -- Config --
-APP_NAME = "Taydesk"
-PORT = 3777
+APP_NAME = "T-Desk"
+PORT = 5043
 URL = f"http://localhost:{PORT}"
-ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "taydesk.ico")
+ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "t-desk.ico")
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # -- State --
@@ -228,7 +228,7 @@ def main():
 
     # Set AppUserModelID so Windows shows our icon in taskbar (not Python's)
     try:
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("taydesk.app")
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("t-desk.app")
     except Exception:
         pass
 
@@ -241,7 +241,7 @@ def main():
         from tkinter import messagebox
         root = tk.Tk()
         root.withdraw()
-        messagebox.showerror("Taydesk", f"Server failed to start on port {PORT}")
+        messagebox.showerror("T-Desk", f"Server failed to start on port {PORT}")
         root.destroy()
         stop_server()
         sys.exit(1)
@@ -280,7 +280,7 @@ def main():
 
     # Create the compact mission control window (starts hidden)
     compact_window = webview.create_window(
-        "Taydesk Control",
+        "T-Desk Control",
         f"{URL}/compact.html",
         width=420,
         height=320,
@@ -298,7 +298,7 @@ def main():
 
     # Set window icons after they appear
     threading.Thread(target=set_window_icon, args=(APP_NAME, ICON_PATH), daemon=True).start()
-    threading.Thread(target=set_window_icon, args=("Taydesk Control", ICON_PATH), daemon=True).start()
+    threading.Thread(target=set_window_icon, args=("T-Desk Control", ICON_PATH), daemon=True).start()
 
     # Start pywebview (blocks until all windows closed)
     webview.start()
