@@ -1,6 +1,6 @@
 {
   "name": "t-desk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "T-Desk — Remote desktop peer dashboard",
   "main": "server/index.js",
   "scripts": {
@@ -9,7 +9,9 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "dotenv": "^17.3.1",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^3.0.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

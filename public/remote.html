@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>T-Desk — Remote</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #0a0a0f;
+      --accent: #0ea5e9;
+      --accent-light: #38bdf8;
+      --text-primary: #e6edf3;
+      --text-muted: #475569;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 16px;
+      background: rgba(10, 10, 15, 0.8);
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    #toolbar .logo {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      cursor: pointer;
+    }
+
+    #toolbar .peer-name {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    #toolbar .peer-id {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    #toolbar .status {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--glass-border);
+    }
+
+    #toolbar .status.connecting { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+    #toolbar .status.connected { color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+    #toolbar .status.error { color: #f87171; border-color: rgba(248, 113, 113, 0.3); }
+
+    #toolbar .spacer { flex: 1; }
+
+    #toolbar button {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #toolbar button:hover {
+      color: var(--text-primary);
+      border-color: rgba(14, 165, 233, 0.3);
+      background: rgba(14, 165, 233, 0.1);
+    }
+
+    #toolbar button.close-btn:hover {
+      color: #f87171;
+      border-color: rgba(248, 113, 113, 0.3);
+      background: rgba(248, 113, 113, 0.1);
+    }
+
+    #viewer {
+      flex: 1;
+      position: relative;
+      background: #000;
+    }
+
+    #viewer iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--bg-deep);
+      z-index: 5;
+    }
+
+    #loading .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--glass-border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #loading .text {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    /* Fullscreen: hide toolbar */
+    body.fullscreen #toolbar { display: none; }
+    body.fullscreen #viewer { height: 100vh; }
+
+    @media (max-width: 640px) {
+      #toolbar { padding: 6px 10px; gap: 8px; }
+      #toolbar .peer-id { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toolbar">
+    <span class="logo" onclick="window.location.href='/'">T-DESK</span>
+    <span class="peer-name" id="peer-name">—</span>
+    <span class="peer-id" id="peer-id-display"></span>
+    <span class="status connecting" id="status">connecting...</span>
+    <span class="spacer"></span>
+    <button onclick="toggleFullscreen()" title="Fullscreen">Fullscreen</button>
+    <button class="close-btn" onclick="disconnect()" title="Close">Close</button>
+  </div>
+
+  <div id="viewer">
+    <div id="loading">
+      <div class="spinner"></div>
+      <div class="text" id="loading-text">Connecting to remote desktop...</div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search)
+    const peerId = params.get('id') || ''
+    const peerName = params.get('name') || peerId
+    const password = params.get('pw') || ''
+
+    document.getElementById('peer-name').textContent = peerName
+    document.getElementById('peer-id-display').textContent = peerId
+    document.title = `T-Desk — ${peerName}`
+
+    function setStatus(text, cls) {
+      const el = document.getElementById('status')
+      el.textContent = text
+      el.className = 'status ' + cls
+    }
+
+    function connect() {
+      setStatus('connecting...', 'connecting')
+      document.getElementById('loading').style.display = 'flex'
+      document.getElementById('loading-text').textContent = 'Loading remote desktop...'
+
+      const viewer = document.getElementById('viewer')
+      const existing = viewer.querySelector('iframe')
+      if (existing) existing.remove()
+
+      const iframe = document.createElement('iframe')
+      iframe.src = '/rustdesk/'
+      iframe.allow = 'clipboard-read; clipboard-write; autoplay; fullscreen'
+      iframe.setAttribute('allowfullscreen', '')
+
+      iframe.onload = () => {
+        document.getElementById('loading').style.display = 'none'
+        setStatus('connected', 'connected')
+        if (peerId) autoTypeAndConnect(iframe)
+      }
+
+      viewer.appendChild(iframe)
+    }
+
+    function autoTypeAndConnect(iframe) {
+      // Wait for Flutter to initialize, then type the peer ID into the input
+      let attempts = 0
+      const interval = setInterval(() => {
+        attempts++
+        if (attempts > 30) { clearInterval(interval); return } // 6 second timeout
+
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow.document
+          // Flutter web uses a hidden text input for keyboard capture
+          const glasspane = doc.querySelector('flt-glass-pane')
+          if (!glasspane) return
+
+          // Find the text editing element in shadow DOM
+          const shadow = glasspane.shadowRoot
+          if (!shadow) return
+
+          // Click on the Remote ID area to focus it (center of the page, upper area)
+          const canvas = shadow.querySelector('canvas') || doc.querySelector('canvas')
+          if (!canvas) return
+
+          // Click on the input area (approximate position of Remote ID field)
+          const rect = canvas.getBoundingClientRect()
+          const clickX = rect.width / 2
+          const clickY = 180 // Remote ID input is roughly at this Y position
+
+          canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: rect.left + clickX, clientY: rect.top + clickY, bubbles: true }))
+          canvas.dispatchEvent(new MouseEvent('mouseup', { clientX: rect.left + clickX, clientY: rect.top + clickY, bubbles: true }))
+          canvas.dispatchEvent(new MouseEvent('click', { clientX: rect.left + clickX, clientY: rect.top + clickY, bubbles: true }))
+
+          // After click, type the peer ID
+          setTimeout(() => {
+            try {
+              // Find Flutter's text input element
+              const textInputs = shadow.querySelectorAll('input[type="text"], textarea')
+              if (textInputs.length > 0) {
+                const input = textInputs[0]
+                input.focus()
+                input.value = peerId
+                input.dispatchEvent(new Event('input', { bubbles: true }))
+
+                // Press Enter to connect
+                setTimeout(() => {
+                  input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }))
+                }, 300)
+              } else {
+                // Fallback: dispatch key events directly to the document
+                const targetDoc = iframe.contentDocument
+                for (const char of peerId) {
+                  targetDoc.dispatchEvent(new KeyboardEvent('keydown', { key: char, code: 'Key' + char.toUpperCase(), bubbles: true }))
+                  targetDoc.dispatchEvent(new KeyboardEvent('keypress', { key: char, code: 'Key' + char.toUpperCase(), bubbles: true }))
+                  targetDoc.dispatchEvent(new KeyboardEvent('keyup', { key: char, code: 'Key' + char.toUpperCase(), bubbles: true }))
+                }
+                // Press Enter
+                setTimeout(() => {
+                  targetDoc.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }))
+                }, 300)
+              }
+            } catch(e) { console.error('Auto-type failed:', e) }
+          }, 500)
+
+          clearInterval(interval)
+        } catch(e) {
+          // Not ready yet
+        }
+      }, 200)
+    }
+
+    function disconnect() {
+      const iframe = document.getElementById('viewer').querySelector('iframe')
+      if (iframe) iframe.src = 'about:blank'
+      window.location.href = '/'
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen()
+        document.body.classList.add('fullscreen')
+      } else {
+        document.exitFullscreen()
+        document.body.classList.remove('fullscreen')
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) document.body.classList.remove('fullscreen')
+    })
+
+    connect()
+  </script>
+</body>
+</html>

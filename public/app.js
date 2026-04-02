@@ -48,8 +48,7 @@ function renderPeers() {
         ${p.alt_id ? `<div class="peer-card-alt">${escHtml(p.alt_id)}</div>` : ''}
         ${p.notes ? `<div class="peer-card-notes">${escHtml(p.notes)}</div>` : ''}
         <div class="peer-card-actions">
-          <button class="btn-connect" onclick="connect('${escHtml(p.peer_id)}')" title="${escHtml(p.peer_id)}">Direct</button>
-          ${p.alt_id ? `<button class="btn-connect btn-connect-alt" onclick="connect('${escHtml(p.alt_id)}')" title="${escHtml(p.alt_id)}">Relay</button>` : ''}
+          <button class="btn-connect" onclick="connectPeer(${p.id})">Connect</button>
           <button class="btn-icon" onclick="openEdit(${p.id})">&#9998;</button>
           <button class="btn-icon delete" onclick="confirmDelete(${p.id},'${escHtml(p.name)}')">&#128465;</button>
         </div>
@@ -60,9 +59,9 @@ function renderPeers() {
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
-function connect(peerId) {
+
+function connect(peerId, peerName) {
   const url = `rustdesk://connect/${peerId}`
-  // Use <a target="_top"> to break out of iframe (needed for admin.taybouts.com embed)
   const a = document.createElement('a')
   a.href = url
   a.target = '_top'
@@ -70,6 +69,13 @@ function connect(peerId) {
   document.body.appendChild(a)
   a.click()
   a.remove()
+}
+
+function connectPeer(id) {
+  const peer = peers.find(p => p.id === id)
+  if (!peer) return
+  const rdId = peer.rustdesk_id || peer.peer_id
+  connect(rdId, peer.name)
 }
 async function confirmDelete(id, name) {
   if (!confirm(`Delete "${name}"?`)) return
@@ -79,7 +85,7 @@ async function confirmDelete(id, name) {
 // --- Peer Modal ---
 function openAdd() {
   document.getElementById('modal-peer-title').textContent = 'Add Peer'
-  ;['peer-edit-id','peer-name','peer-id','peer-notes','peer-alt-id'].forEach(id => document.getElementById(id).value = '')
+  ;['peer-edit-id','peer-name','peer-id','peer-notes','peer-alt-id','peer-rustdesk-id'].forEach(id => document.getElementById(id).value = '')
   document.getElementById('peer-group').value = ''
   document.getElementById('modal-peer').classList.remove('hidden')
   document.getElementById('peer-name').focus()
@@ -93,6 +99,7 @@ function openEdit(id) {
   document.getElementById('peer-group').value = peer.group_id || ''
   document.getElementById('peer-notes').value = peer.notes || ''
   document.getElementById('peer-alt-id').value = peer.alt_id || ''
+  document.getElementById('peer-rustdesk-id').value = peer.rustdesk_id || ''
   document.getElementById('modal-peer').classList.remove('hidden')
 }
 document.getElementById('btn-save-peer').addEventListener('click', async () => {
@@ -102,7 +109,8 @@ document.getElementById('btn-save-peer').addEventListener('click', async () => {
     peer_id: document.getElementById('peer-id').value.trim(),
     group_id: document.getElementById('peer-group').value || null,
     notes: document.getElementById('peer-notes').value.trim(),
-    alt_id: document.getElementById('peer-alt-id').value.trim()
+    alt_id: document.getElementById('peer-alt-id').value.trim(),
+    rustdesk_id: document.getElementById('peer-rustdesk-id').value.trim()
   }
   if (!data.name || !data.peer_id) return alert('Name and Peer ID are required.')
   if (editId) await updatePeer(editId, data); else await addPeer(data)
@@ -432,7 +440,20 @@ async function fetchStatus() {
 // Poll every 15 seconds; first call after peers load
 function startStatusPolling() {
   fetchStatus()
-  setInterval(fetchStatus, 15000)
+  // Only poll when page is visible, every 30 seconds
+  let pollTimer = null
+  function startPoll() {
+    if (pollTimer) return
+    pollTimer = setInterval(fetchStatus, 30000)
+  }
+  function stopPoll() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopPoll()
+    else { fetchStatus(); startPoll() }
+  })
+  if (!document.hidden) startPoll()
 }
 
 // --- Label & positions ---
@@ -656,17 +677,18 @@ roomCanvas.addEventListener('mousedown', e => {
   }
 })
 
-function smartConnect(peerId, altId) {
-  // If alt_id (direct IP) is reachable, prefer it; otherwise fall back to peer_id (relay)
-  if (altId && peerStatus[peerId] === 'online') connect(altId)
-  else connect(peerId)
+function smartConnect(peerId, altId, peerName) {
+  // Look up rustdesk_id from peers array
+  const peer = peers.find(p => p.peer_id === peerId)
+  const rdId = (peer && peer.rustdesk_id) || peerId
+  connect(rdId, peerName)
 }
 function handleConnectTap(e) {
   if (editMode || podDragMoved) { podDragMoved = false; return }
   const btn = e.target.closest('.connect-btn')
-  if (btn && btn.dataset.connectId) { connect(btn.dataset.connectId); return }
+  if (btn && btn.dataset.connectId) { connect(btn.dataset.connectId, btn.dataset.name); return }
   const token = e.target.closest('.sim-token')
-  if (token && !e.target.closest('.connect-btns')) smartConnect(token.dataset.peerId, token.dataset.altId)
+  if (token && !e.target.closest('.connect-btns')) smartConnect(token.dataset.peerId, token.dataset.altId, token.dataset.name)
 }
 roomCanvas.addEventListener('click', handleConnectTap)
 

@@ -20,8 +20,9 @@ db.exec(`
   );
 `)
 
-// Safe migration — add alt_id if not yet present
+// Safe migrations
 try { db.exec('ALTER TABLE peers ADD COLUMN alt_id TEXT DEFAULT ""') } catch(e) {}
+try { db.exec('ALTER TABLE peers ADD COLUMN rustdesk_id TEXT DEFAULT ""') } catch(e) {}
 
 // Room layouts stored in DB (not localStorage)
 db.exec(`

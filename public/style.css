@@ -343,9 +343,9 @@ main { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
 .btn-connect {
   flex: 1;
   padding: 10px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
-  color: #0a0a0f;
-  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
   border-radius: 8px;
   cursor: pointer;
   font-family: 'Rajdhani', sans-serif;
@@ -355,7 +355,14 @@ main { max-width: 1100px; margin: 32px auto; padding: 0 24px; }
   text-transform: uppercase;
   transition: all 0.25s ease-out;
 }
-.btn-connect:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3); }
+.btn-connect:hover { color: var(--text-primary); border-color: rgba(14, 165, 233, 0.3); }
+
+.btn-remote {
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  border: none;
+  color: #0a0a0f;
+}
+.btn-remote:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3); color: #0a0a0f; }
 
 .btn-connect-alt {
   background: var(--glass-bg);

@@ -1,3 +1,56 @@
+## v0.4.0 — RustDesk Native Integration & Bootstrap Auto-Registration
+_Released: 2026-04-02_
+
+### New Features
+- **Self-hosted RustDesk server**: hbbs + hbbr running on ONEO7 via Docker. All agents connect through `192.168.1.102:21116/21117` with dedicated public key.
+- **rustdesk_id field**: New DB column and UI field for the numeric RustDesk peer ID (e.g. `177929952`). Connect button prefers `rustdesk_id` over `peer_id` automatically.
+- **Bootstrap auto-registration**: Remote machines running `setup-ssh.ps1` (T-Admin) auto-install RustDesk, configure the self-hosted server, grab their ID, and POST it to `desk.taybouts.com/api/peers/register-rustdesk` — no manual entry needed.
+- **`POST /api/peers/register-rustdesk`**: New endpoint. Matches incoming registration by `peer_id` or `name`; updates existing peer or creates new one.
+- **`GET /api/config`**: Exposes `rustdeskWebUrl` and `rustdeskServer` to frontend — config-driven, no hardcoded URLs.
+- **`/rustdesk` proxy**: `http-proxy-middleware` proxies the RustDesk Flutter web client with `<base href>` rewriting for correct asset paths (parked — use when WSS becomes available).
+
+### Improvements
+- **No more flashing console windows**: All `exec()` calls use `windowsHide: true`. ICMP ping replaced with TCP socket connect to port 3389 (RDP) — no process spawned at all.
+- **Smart status polling**: Polling only runs when browser tab is visible. Switches to 30s interval (was 15s). Stops on tab hide, resumes with immediate fetch on tab show.
+- **Unified Connect button**: "Direct" / "Relay" split replaced with single "Connect" button. Always uses `rustdesk_id` if set, falls back to `peer_id`. Room layout `smartConnect()` updated to same logic.
+- **`http-proxy-middleware` added**: Replaces manual `http-proxy` setup for the `/rustdesk` route.
+- **Removed `guacamole-common-js`**: Full VNC/Guacamole code purged. `server/routes/guacamole.js` deleted, `/guac-tunnel` WebSocket proxy removed.
+
+### Architecture
+- `server/db.js` — Safe migration: `ALTER TABLE peers ADD COLUMN rustdesk_id TEXT DEFAULT ""`
+- `server/routes/peers.js` — Added `register-rustdesk` POST endpoint; `rustdesk_id` included in all peer INSERT/UPDATE operations
+- `server/routes/status.js` — `windowsHide: true` on exec; TCP socket ping via `net.Socket` on port 3389 instead of spawning `ping.exe`
+- `server/index.js` — Added `/api/config`, `/rustdesk` proxy middleware; removed Guacamole WebSocket tunnel; uses plain `app.listen` (no `http.createServer`)
+- `public/app.js` — `connectPeer(id)` function; status polling visibility-aware; `smartConnect()` uses `rustdesk_id`; `rustdesk_id` field wired into modal
+- `public/index.html` — RustDesk ID input field added to peer edit/add modal
+- `public/remote.html` — New stub viewer page (parked pending WSS fix for web client)
+- `server/.env` — `RUSTDESK_WEB_URL`, `RUSTDESK_SERVER`, `RUSTDESK_KEY` (not committed)
+- Dependencies: added `http-proxy-middleware`, `dotenv`; removed `guacamole-common-js`, old `http-proxy`
+
+### Known Pending
+- Bootstrap silent install: kill RustDesk UI process after install, remove tray/shortcut — T-Admin working on this
+- RustDesk web client (WSS): Caddy WSS proxy on ports 21118/21119 not yet working — mixed content blocks ws:// from https:// pages
+
+---
+
+## v0.3.0 — T-Desk Rename & T-Design Migration
+_Released: 2026-03-29_
+
+### New Features
+- **T-Design system applied**: Sky blue accent (`#0ea5e9` → `#38bdf8`), glass-morphism cards, Rajdhani + Share Tech Mono typography
+- **Peer card upgrade**: Redesigned peer cards with proper hierarchy and action buttons
+
+### Improvements
+- **Renamed**: Taydesk → T-Desk throughout (titles, tray labels, comments, CLAUDE.md)
+- **Port moved**: 3777 → 5043 to fit the T-Admin ecosystem (5040–5049 range)
+
+### Architecture
+- `public/style.css` — Full T-Design token application
+- `public/index.html` — Updated branding and card markup
+- `server/index.js` — Port updated to 5043 via env var
+
+---
+
 ## v0.2.1 — Tailscale Status & Tray-Only Launch
 _Released: 2026-03-14_
 

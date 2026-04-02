@@ -9,7 +9,7 @@ const CACHE_TTL = 12000
 // Parse `tailscale status` output into a map of IP -> status
 function getTailscaleStatus() {
   return new Promise(resolve => {
-    exec('tailscale status', { timeout: 5000 }, (err, stdout) => {
+    exec('tailscale status', { timeout: 5000, windowsHide: true }, (err, stdout) => {
       if (err) return resolve(null)
       const statuses = {}
       for (const line of stdout.split('\n')) {
@@ -39,13 +39,17 @@ function findTailscaleIP(peer_id, alt_id) {
   return candidates.find(s => isIP(s) && isTailscale(s)) || null
 }
 
-// Fallback ping for non-Tailscale peers
+// Fallback ping using TCP connect — no console windows
 function pingHost(host) {
   return new Promise(resolve => {
-    const cmd = process.platform === 'win32'
-      ? `ping -n 1 -w 1500 ${host}`
-      : `ping -c 1 -W 2 ${host}`
-    exec(cmd, { timeout: 4000 }, err => resolve(!err))
+    const net = require('net')
+    const socket = new net.Socket()
+    socket.setTimeout(2000)
+    socket.once('connect', () => { socket.destroy(); resolve(true) })
+    socket.once('timeout', () => { socket.destroy(); resolve(false) })
+    socket.once('error', () => { socket.destroy(); resolve(false) })
+    // Try common ports: RDP (3389), then HTTP (80), then SMB (445)
+    socket.connect(3389, host)
   })
 }
 
